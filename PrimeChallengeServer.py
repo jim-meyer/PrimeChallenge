@@ -1,5 +1,4 @@
 from http import HTTPStatus
-import json
 import random
 from flask import Flask
 
@@ -53,10 +52,12 @@ def startJobImpl(start, end):
 		raise HTTPStatusException.HTTPStatusException('{0} must be an int'.format(end), HTTPStatus.BAD_REQUEST)
 
 	if endInt < startInt:
-		raise HTTPStatusException.HTTPStatusException('First argument ({0}) must be less than the second argument ({1})'.format(startInt, endInt), HTTPStatus.BAD_REQUEST)
+		raise HTTPStatusException.HTTPStatusException('First argument ({0}) must be less than the second argument ({1})'
+		                                              .format(startInt, endInt), HTTPStatus.BAD_REQUEST)
 
 	if startInt < 0:
-		raise HTTPStatusException.HTTPStatusException('First argument ({0}) must be greater than zero'.format(startInt), HTTPStatus.BAD_REQUEST)
+		raise HTTPStatusException.HTTPStatusException('First argument ({0}) must be greater than zero'
+		                                              .format(startInt), HTTPStatus.BAD_REQUEST)
 
 	job_id = random.randint(0, 0x7fffffff)
 	job_id_str = '{:02x}'.format(job_id)
@@ -64,9 +65,10 @@ def startJobImpl(start, end):
 	# First we store the job ID along with the request's parameters
 	redis_client.set(job_id_str, key)
 
-	# Now at some point in the future we will update redis by storing the prime numbers associated with the start/end parameters.
-	# That way a '/Query' can look up the parameters by job ID, then look up the prime numbers based on those parameters.
-	result = PrimeGenerator.generate_primes_between(startInt, endInt, redis_client, key)
+	# Now we generate the prime numbers asynchronously. The asyn processing will update redis by storing the
+	# prime numbers associated with the start/end parameters. That way a '/Query' can look up the parameters
+	# by job ID, then look up the prime numbers based on those parameters.
+	PrimeGenerator.generate_primes_between_async(startInt, endInt, redis_client, key)
 
 	return job_id_str
 
@@ -79,8 +81,8 @@ def queryJobImpl(jobId):
 	else:
 		primes_as_json = redis_client.get(job_args_key)
 		if primes_as_json is None:
-			raise HTTPStatusException.HTTPStatusException('The prime numbers for {0} are still being calculated'.format(job_args_key),
-			                                              HTTPStatus.NO_CONTENT)
+			raise HTTPStatusException.HTTPStatusException('The prime numbers for {0} are still being calculated'
+			                                              .format(job_args_key), HTTPStatus.NO_CONTENT)
 	return primes_as_json
 
 
@@ -117,4 +119,10 @@ def QueryJob(jobId):
 
 
 if __name__ == '__main__':
+	thread_pool = PrimeGenerator.start_thread_pool()
+	# Start the thread pool that will handle the async prime number generation
+	prime_generator_thread_pool = ThreadPool(2)
+	# Start the flask web server
 	app.run(host='0.0.0.0', port=8080)
+	# Now shut down the thread pool nicely
+	PrimeGenerator.stop_thread_pool(thread_pool)

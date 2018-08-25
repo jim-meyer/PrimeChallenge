@@ -40,3 +40,12 @@ def get_redis_client():
 	:return:
 	"""
 	return FakeRedisClient()
+
+
+def get_dummy_redis_client():
+	"""
+	Returns a class that support redis-like 'get' and 'set' operations for testing purposes. This implementation doesn't
+	require redis itself to be running since it implements a simple redis-like implementation.
+	:return:
+	"""
+	return FakeRedisClient()
