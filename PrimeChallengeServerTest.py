@@ -1,3 +1,4 @@
+import os
 import unittest
 import json
 from http import HTTPStatus
@@ -18,7 +19,8 @@ class PrimeChallengeServerTestCase(unittest.TestCase):
 	def setUp(self):
 		# These tests require a real redis client since the fake redis client doesn't work across threads/processes
 #		RedisClientFactory.use_fake_redis_client()
-		RedisClientFactory.register_redis_server('192.168.1.119')
+		redis_server_ip = os.environ.get('REDIS_SERVER_IP')
+		RedisClientFactory.register_redis_server(redis_server_ip)
 		PrimeChallengeServer.set_redis_client(RedisClientFactory.get_redis_client())
 
 	def tearDown(self):

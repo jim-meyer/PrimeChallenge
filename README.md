@@ -64,10 +64,10 @@ Here's another script that gives a good idea that multiple requests are being ha
 
 
 ## Running The Unit Tests
-The unit tests require a running redis server or else several unit tests will fail.
+The unit tests require a running redis server or else several unit tests will fail. (Perhaps calling these "unit tests" is not quite accurate but I haven't invested in solving the inherent difficulties of trying to provide thread safe fakes that unit tests can use.)
 From the project's directory on the Windows machine:
 
-`RunUnitTests.bat`
+`RunUnitTests.bat <IP address of redis server>`
 
 
 ## Security Considerations
