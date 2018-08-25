@@ -5,7 +5,9 @@
 PrimeChallenge is a REST service that will calculate all the prime number between two integer values asynchronously. The caller can the poll the server for the results. If some caller has already made a request for a give start/end integer pair then future callers will get their answers very quickly since the results are cached in a redis server.
 
 ## Requirements
-This server was developed on Windows and hence the instructions for installing it and its prerequisites are tailoered to Windows. But I've included Linux info as well.
+This server was initially developed on Windows. But it should support Linux equally well. The instructions include information on both OSes.
+
+It is perhaps easiest to use this on Linux where it is easy to run redis and the PrimeChallenge server locally on a single box.
 
 Flask must be installed to run the web service. See http://flask.pocoo.org/docs/1.0/installation/.
 
