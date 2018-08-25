@@ -1,49 +1,49 @@
 | **`Documentation`** |
 |-----------------|
 
-**PrimeChallenge** is a REST service that will calculate all the prime number between two integer values asynchronously. The caller can the poll the server for the results. If some caller has already made a request for a give start/end integer pair then future callers will get their answers very quickly since the results are cached in a redis server.
+#PrimeChallenge
+PrimeChallenge is a REST service that will calculate all the prime number between two integer values asynchronously. The caller can the poll the server for the results. If some caller has already made a request for a give start/end integer pair then future callers will get their answers very quickly since the results are cached in a redis server.
 
 ## Requirements
 This server was developed on Windows and hence the instructions for installing it and its prerequisites are tailoered to Windows. Getting this to run on Linux should be straightforward though since it's written in Python and relies on just a few Python pip modules that readily work on Linux as well as Windows.
 
 Flask must be installed to run the web service. See http://flask.pocoo.org/docs/1.0/installation/.
 
+A redis server must also be available. Installation instructions are below if needed.
 
 ## Installation
 Create a Python virtual environment so the based python install isn't altered.
 
 On a Windows machine:
 
-`cd C:\temp
-python -m venv PrimeChallenge
-PrimeChallenge\scripts\activate.bat
-pip install Flask
-pip install redis
-`
+    cd C:\temp
+    python -m venv PrimeChallenge
+    PrimeChallenge\scripts\activate.bat
+    pip install Flask
+    pip install redis
 
 Install redis since it is required by this project. On a Linux machine follow the instructions at https://redis.io/topics/quickstart:
 
 **CAUTION: The insructions below will run redis so that it listens on all external NICs, not just the loopback address. This has security ramifications but was safe for me to do on my private home network.**
 
-`wget http://download.redis.io/redis-stable.tar.gz
-tar xvzf redis-stable.tar.gz
-cd redis-stable
-make
-redis-server
-make test
-./src/redis-server --protected-mode no
-`
+    wget http://download.redis.io/redis-stable.tar.gz
+    tar xvzf redis-stable.tar.gz
+    cd redis-stable
+    make
+    redis-server
+    make test
+    ./src/redis-server --protected-mode no
 
 ## Starting the PrimeChallenge server
 The server listens on port 8080 by default to avoid conflicts in case a server is already running on port 80.
 
 On the Windows machine:
 
-`cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>>`
+    cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>>
 
 Or to have the server accessible from the non-loopback address:
 
-`cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>> --listenerAddress 0.0.0.0`
+    cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>> --listenerAddress 0.0.0.0
 
 
 ## Using the PrimeChallenge server
@@ -54,20 +54,18 @@ Here's an example script that shows that fetching results from a pre-warmed cach
 
 _Be sure and use the appropriate IP address for the prime challenge server as the argument to the script._
 
-`RunColdVsWarmCache_test.sh 127.0.0.1
-`
+    RunColdVsWarmCache_test.sh 127.0.0.1
 
 Here's another script that gives a good idea that multiple requests are being handled in parallel.
 
-`ProveParallelismTest.sh 127.0.0.1
-`
+    ProveParallelismTest.sh 127.0.0.1
 
 
 ## Running The Unit Tests
 The unit tests require a running redis server or else several unit tests will fail. (Perhaps calling these "unit tests" is not quite accurate but I haven't invested in solving the inherent difficulties of trying to provide thread safe fakes that unit tests can use.)
 From the project's directory on the Windows machine:
 
-`RunUnitTests.bat <IP address of redis server>`
+    RunUnitTests.bat <IP address of redis server>
 
 
 ## Security Considerations

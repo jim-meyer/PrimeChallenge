@@ -77,4 +77,4 @@ ENDTIME=$(date +%s)
 parallel_duration=$(($ENDTIME - $STARTTIME))
 echo "It took ${parallel_duration} seconds get 3 sets of prime numbers in parallel"
 
-echo "${parallel_duration} should be around 50% or less of ${serial_duration} *if* you have 4 or more cores/CPUs on the PrimeChallenge server"
+echo "${parallel_duration} should be around 60% or less of ${serial_duration} *if* you have 4 or more cores/CPUs on the PrimeChallenge server"
