@@ -39,7 +39,11 @@ The server listens on port 8080 by default to avoid conflicts in case a server i
 
 On the Windows machine:
 
-`cd C:\temp\PrimeChallenge\StartSever.bat`
+`cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>>`
+
+Or to have the server accessible from the non-loopback address:
+
+`cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>> --listenerAddress 0.0.0.0`
 
 
 ## Using the PrimeChallenge server
