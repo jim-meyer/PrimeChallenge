@@ -1,8 +1,5 @@
-import threading
-from queue import Queue
 import json
-import os
-#from multiprocessing import Pool as ThreadPool
+import multiprocessing as mp
 
 import RedisClientFactory
 
@@ -12,44 +9,9 @@ import RedisClientFactory
 thread_pool = None
 
 
-class PrimeGeneratorThreadPool(object):
-	def __init__(self):
-		self.work_queue = Queue()
-		self.threads = []
-		for i in range(os.cpu_count()):
-			t = threading.Thread(target=self.process_queue)
-			t.daemon = True
-			t.start()
-			self.threads.append(t)
-
-	def __enter__(self):
-		pass
-
-	def __exit__(self, exception_type, exception_value, traceback):
-		for t in self.threads:
-			t.join(2.0)
-		global thread_pool
-		# TODO - Kind of cheesy to do this here. Hopefully can get back to clean this up a bit later.
-		thread_pool = None
-
-	def process_queue(self):
-		while True:
-			gen_prime_arg_tuple = self.work_queue.get()
-			_generate_primes_between_sync_shim(gen_prime_arg_tuple)
-			self.work_queue.task_done()
-
-	def append_to_work_queue(self, start, end, redis_client, key_to_store_results_under):
-		self.work_queue.put({'start': start, 'end': end, 'redis_client': None, 'key_to_store_results_under': key_to_store_results_under})
-
-
-def start_thread_pool():
-	"""
-	Returns the thread pool that this code uses to generate prime numbers asynachronously.
-	:return:
-	"""
-	global thread_pool
-	thread_pool = PrimeGeneratorThreadPool()
-	return thread_pool
+def debug_log(msg):
+#	print(msg)
+	pass
 
 
 # Based largely on code from https://hackernoon.com/prime-numbers-using-python-824ff4b3ea19
@@ -92,6 +54,7 @@ def _generate_primes_between_sync(start, end, redis_client, key_to_store_results
 	"""
 	# We create the client here since for the multi-threading case (vs the multi-processing case) Python
 	# can't pickle the object to marshal it to another thread.
+	debug_log('Entering _generate_primes_between_sync({0}, {1}, <redis client>, {2})'.format(start, end, key_to_store_results_under))
 	if redis_client is None:
 		redis_client = RedisClientFactory.get_redis_client()
 
@@ -99,15 +62,29 @@ def _generate_primes_between_sync(start, end, redis_client, key_to_store_results
 	# We store the job results as json for convenience of marshaling to/from redis
 	primes_as_json = json.dumps(primes)
 	redis_client.set(key_to_store_results_under, primes_as_json)
+	debug_log('Exiting _generate_primes_between_sync({0}, {1}, <redis client>, {2})'.format(start, end, key_to_store_results_under))
 	return primes
 
 
 def _generate_primes_between_sync_shim(*args, **kwargs):
+	debug_log('Entering _generate_primes_between_sync_shim()')
 	_generate_primes_between_sync(args[0]['start'], args[0]['end'], args[0]['redis_client'], args[0]['key_to_store_results_under'])
+	debug_log('Exiting _generate_primes_between_sync_shim()')
+
+
+def _generate_primes_between_sync_shim2(start, end, redis_server_ip, key_to_store_results_under):
+	debug_log('Entering _generate_primes_between_sync_shim2({0}, {1}, {2}, {3})'.format(start, end, redis_server_ip, key_to_store_results_under))
+	RedisClientFactory.register_redis_server(redis_server_ip)
+	redis_client = RedisClientFactory.get_redis_client_for_ip(redis_server_ip)
+	_generate_primes_between_sync(start, end, redis_client, key_to_store_results_under)
+	debug_log('Exiting _generate_primes_between_sync_shim2({0}, {1}, {2}, {3})'.format(start, end, redis_server_ip, key_to_store_results_under))
 
 
 def generate_primes_between_async(start, end, redis_client, key_to_store_results_under):
 	# This is here just in case it helps to change things to be synchronous for debugging purposes
-	_generate_primes_between_sync(start, end, redis_client, key_to_store_results_under)
-#	global thread_pool
-#	thread_pool.append_to_work_queue(start, end, None, key_to_store_results_under)
+#	_generate_primes_between_sync(start, end, redis_client, key_to_store_results_under)
+	debug_log('Entering generate_primes_between_async()')
+	redis_server_ip = RedisClientFactory.get_redis_server_ip()
+	p = mp.Process(target=_generate_primes_between_sync_shim2, args=(start, end, redis_server_ip, key_to_store_results_under,))
+	p.start()
+	debug_log('Exiting generate_primes_between_async()')

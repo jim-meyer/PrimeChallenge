@@ -64,14 +64,10 @@ Here's another script that gives a good idea that multiple requests are being ha
 
 
 ## Running The Unit Tests
+The unit tests require a running redis server or else several unit tests will fail.
 From the project's directory on the Windows machine:
 
-`python -m unittest discover -p "*Test.py"`
-
-You may see errors like the following. These are benign.
-
-`ResourceWarning: unclosed <socket.socket fd=688, family=AddressFamily.AF_INET
-`
+`RunUnitTests.bat`
 
 
 ## Security Considerations

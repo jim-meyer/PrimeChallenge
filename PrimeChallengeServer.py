@@ -162,8 +162,5 @@ if __name__ == '__main__':
 	RedisClientFactory.register_redis_server(args.redisServerIP)
 	set_redis_client(RedisClientFactory.get_redis_client())
 
-	# Start the thread pool that will handle the async prime number generation
-	with PrimeGenerator.start_thread_pool() as tp:
-		# Start the flask web server
-		app.run(host=args.listenerAddress, port=8080)
-	# The thread pool has shut down nicely already via the 'with'/__exit__() protocol
+	# Start the flask web server
+	app.run(host=args.listenerAddress, port=8080)

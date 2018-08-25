@@ -8,9 +8,8 @@ class RealRedisClient():
 	"""
 	The implementation that uses and actual redis server.
 	"""
-	def __init__(self):
-		global g_redis_server_ip
-		self.redis_conn = redis.StrictRedis(host=g_redis_server_ip, port=6379, db=0)
+	def __init__(self, redis_server_ip):
+		self.redis_conn = redis.StrictRedis(host=redis_server_ip, port=6379, db=0)
 
 	def get(self, key):
 		return self.redis_conn.get(key)
@@ -46,6 +45,16 @@ def register_redis_server(redis_server_ip):
 	g_redis_server_ip = redis_server_ip
 
 
+def get_redis_server_ip():
+	global g_redis_server_ip
+	return g_redis_server_ip
+
+
+def get_redis_client_for_ip(redis_server_ip):
+	result = RealRedisClient(redis_server_ip)
+	return result
+
+
 def get_redis_client():
 	"""
 	Returns a class that support redis 'get' and 'set' operations.
@@ -56,14 +65,14 @@ def get_redis_client():
 	if g_use_fake_redis_client:
 		result = FakeRedisClient()
 	else:
-		result = RealRedisClient()
+		result = RealRedisClient(get_redis_server_ip())
 	return result
 
 
-def use_fake_redis_client():
+def use_fake_redis_client(use_fake=True):
 	"""
 	Used by unit tests where we don't want to require a real redis server to be available.
 	:return:
 	"""
 	global g_use_fake_redis_client
-	g_use_fake_redis_client = True
+	g_use_fake_redis_client = use_fake
