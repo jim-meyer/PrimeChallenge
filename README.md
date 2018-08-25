@@ -1,7 +1,7 @@
 | **`Documentation`** |
 |-----------------|
 
-#PrimeChallenge
+# PrimeChallenge
 PrimeChallenge is a REST service that will calculate all the prime number between two integer values asynchronously. The caller can the poll the server for the results. If some caller has already made a request for a give start/end integer pair then future callers will get their answers very quickly since the results are cached in a redis server.
 
 ## Requirements
@@ -60,6 +60,7 @@ Or to have the server accessible from the non-loopback address:
     StartSever.bat --redisServerIP <<IP address of redis server>> --listenerAddress 0.0.0.0
 
 Linux:
+
     cd ~/git/PrimeChallenge
     ./StartSever.sh --redisServerIP <<IP address of redis server>> --listenerAddress 127.0.0.1
 
@@ -85,6 +86,9 @@ From the project's directory on the Windows machine:
 
     RunUnitTests.bat <IP address of redis server>
 
+Or for Linux:
+
+    ./RunUnitTests.sh <IP address of redis server>
 
 ## Security Considerations
 The server does not support SSL. And no authentication is being done. So Client1 can see Client2's jobs and vice versa.
