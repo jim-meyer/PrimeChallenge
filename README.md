@@ -5,13 +5,15 @@
 PrimeChallenge is a REST service that will calculate all the prime number between two integer values asynchronously. The caller can the poll the server for the results. If some caller has already made a request for a give start/end integer pair then future callers will get their answers very quickly since the results are cached in a redis server.
 
 ## Requirements
-This server was developed on Windows and hence the instructions for installing it and its prerequisites are tailoered to Windows. Getting this to run on Linux should be straightforward though since it's written in Python and relies on just a few Python pip modules that readily work on Linux as well as Windows.
+This server was developed on Windows and hence the instructions for installing it and its prerequisites are tailoered to Windows. But I've included Linux info as well.
 
 Flask must be installed to run the web service. See http://flask.pocoo.org/docs/1.0/installation/.
 
 A redis server must also be available. Installation instructions are below if needed.
 
 ## Installation
+These instructions assume you've cloned the git repo to C:\git\PrimeChallenge on Windows or ~/git/PrimeChallenge on Linux. 
+
 Create a Python virtual environment so the based python install isn't altered.
 
 On a Windows machine:
@@ -21,6 +23,15 @@ On a Windows machine:
     PrimeChallenge\scripts\activate.bat
     pip install Flask
     pip install redis
+
+Or Linux:
+
+    cd ~/temp
+    python -m venv PrimeChallenge
+    source PrimeChallenge/bin/activate
+    pip install Flask
+    pip install redis
+
 
 Install redis since it is required by this project. On a Linux machine follow the instructions at https://redis.io/topics/quickstart:
 
@@ -39,11 +50,16 @@ The server listens on port 8080 by default to avoid conflicts in case a server i
 
 On the Windows machine:
 
-    cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>>
+    cd C:\git\PrimeChallenge
+    StartSever.bat --redisServerIP <<IP address of redis server>>
 
 Or to have the server accessible from the non-loopback address:
 
-    cd C:\temp\PrimeChallenge\StartSever.bat --redisServerIP <<IP address of redis server>> --listenerAddress 0.0.0.0
+    StartSever.bat --redisServerIP <<IP address of redis server>> --listenerAddress 0.0.0.0
+
+Linux:
+    cd ~/git/PrimeChallenge
+    ./StartSever.sh --redisServerIP <<IP address of redis server>> --listenerAddress 127.0.0.1
 
 
 ## Using the PrimeChallenge server
@@ -54,11 +70,11 @@ Here's an example script that shows that fetching results from a pre-warmed cach
 
 _Be sure and use the appropriate IP address for the prime challenge server as the argument to the script._
 
-    RunColdVsWarmCache_test.sh 127.0.0.1
+    ./RunColdVsWarmCache_test.sh 127.0.0.1
 
 Here's another script that gives a good idea that multiple requests are being handled in parallel.
 
-    ProveParallelismTest.sh 127.0.0.1
+    ./ProveParallelismTest.sh 127.0.0.1
 
 
 ## Running The Unit Tests
@@ -90,7 +106,6 @@ The way parameters are passed in the URLs used by the '/Start' endpoint is a bit
 
 
 ## TODO
-Handle requests asynchronously
 
 
 ## Credits
