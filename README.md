@@ -43,10 +43,11 @@ On the Windows machine:
 
 ## Using the PrimeChallenge server
 
-Examples using bash:
+Examples using bash. Be sure and update the PRIME_SERVER variable to point to the IP address of the server. I used cygwin on the same Windows machine that was running the server. But this should also work from a remote Linux machine if the IP address is updated accordingly.
 
-`set +x
-PRIME_SERVER=127.0.0.1
+Here's an example script that shows that fetching results from a pre-warmed cache works.
+
+`PRIME_SERVER=127.0.0.1
 jobid=$(curl --request POST "http://${PRIME_SERVER}:8080/Start/1,3")
 echo ${jobid}
 curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}"
@@ -54,17 +55,27 @@ curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}"
 STARTTIME=$(date +%s)
 jobid=$(curl --request POST "http://${PRIME_SERVER}:8080/Start/1,1234567")
 echo ${jobid}
-curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}"
+until ! curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}" -v 2>&1 | grep "HTTP/1.0 204"; do
+    printf '.'
+    sleep 1
+done
+curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}" 
 ENDTIME=$(date +%s)
-echo "It took $(($ENDTIME - $STARTTIME)) seconds get the prime numbers from a cold cache state"
+cold_cache_duration=$(($ENDTIME - $STARTTIME))
+echo "It took $cold_cache_duration seconds get the prime numbers from a cold cache state"
 
 STARTTIME=$(date +%s)
 jobid=$(curl --request POST "http://${PRIME_SERVER}:8080/Start/1,1234567")
 echo ${jobid}
-curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}"
+until ! curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}" -v 2>&1 | grep "HTTP/1.0 204"; do
+    printf '.'
+    sleep 1
+done
+curl --request GET "http://${PRIME_SERVER}:8080/Query/${jobid}" 
 ENDTIME=$(date +%s)
-echo "It took $(($ENDTIME - $STARTTIME)) seconds get the prime numbers from a warm cache state"
-
+warm_cache_duration=$(($ENDTIME - $STARTTIME))
+echo "It took $warm_cache_duration seconds get the prime numbers from a warm cache state"
+echo "$warm_cache_duration should be much less than $cold_cache_duration"
 `
 
 ## Errors

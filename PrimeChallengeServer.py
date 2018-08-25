@@ -66,10 +66,18 @@ def startJobImpl(start, end):
 	# First we store the job ID along with the request's parameters
 	redis_client.set(job_id_str, key)
 
-	# Now we generate the prime numbers asynchronously. The asyn processing will update redis by storing the
-	# prime numbers associated with the start/end parameters. That way a '/Query' can look up the parameters
-	# by job ID, then look up the prime numbers based on those parameters.
-	PrimeGenerator.generate_primes_between_async(startInt, endInt, redis_client, key)
+	# Do a "quick" check to see if we've already cached the primes in redis. If we have then there is no sense
+	# calculating them again. "Quick" is in quotes since there may very well be some cases where it's faster to
+	# simply generate the primes rather than hit the network and redis and back. But until more analysis is done
+	# this seems reasonable.
+	primes_as_json = redis_client.get(key)
+	if primes_as_json is None:
+		# Now we generate the prime numbers asynchronously. The asyn processing will update redis by storing the
+		# prime numbers associated with the start/end parameters. That way a '/Query' can look up the parameters
+		# by job ID, then look up the prime numbers based on those parameters.
+		PrimeGenerator.generate_primes_between_async(startInt, endInt, redis_client, key)
+	else:
+		pass
 
 	return job_id_str
 

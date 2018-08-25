@@ -1,8 +1,11 @@
-import itertools
+import threading
+from queue import Queue
 import json
-from multiprocessing import Pool as ThreadPool
+import os
+#from multiprocessing import Pool as ThreadPool
 
 import RedisClientFactory
+
 
 # We can handle requests asynchronously via threads since the redis client is thread safe AND we are not accessing or
 # altering variables shared across threads.
@@ -11,21 +14,32 @@ thread_pool = None
 
 class PrimeGeneratorThreadPool(object):
 	def __init__(self):
-		self.thread_pool = ThreadPool()
-		super().__init__()
+		self.work_queue = Queue()
+		self.threads = []
+		for i in range(os.cpu_count()):
+			t = threading.Thread(target=self.process_queue)
+			t.daemon = True
+			t.start()
+			self.threads.append(t)
 
 	def __enter__(self):
 		pass
 
 	def __exit__(self, exception_type, exception_value, traceback):
-		self.thread_pool.close()
-		self.thread_pool.join()
+		for t in self.threads:
+			t.join(2.0)
 		global thread_pool
 		# TODO - Kind of cheesy to do this here. Hopefully can get back to clean this up a bit later.
 		thread_pool = None
 
-	def map(self, func, iterable, chunksize=None):
-		return self.thread_pool.map(func, iterable, chunksize)
+	def process_queue(self):
+		while True:
+			gen_prime_arg_tuple = self.work_queue.get()
+			_generate_primes_between_sync_shim(gen_prime_arg_tuple)
+			self.work_queue.task_done()
+
+	def append_to_work_queue(self, start, end, redis_client, key_to_store_results_under):
+		self.work_queue.put({'start': start, 'end': end, 'redis_client': None, 'key_to_store_results_under': key_to_store_results_under})
 
 
 def start_thread_pool():
@@ -36,19 +50,6 @@ def start_thread_pool():
 	global thread_pool
 	thread_pool = PrimeGeneratorThreadPool()
 	return thread_pool
-
-
-def stop_thread_pool(pool):
-	"""
-	This just exists for symmetry with start_thread_pool(). It is not used since we use 'with' statements to manage
-	the thread pool.
-	:param pool:
-	:return:
-	"""
-	global thread_pool
-	thread_pool.close()
-	thread_pool.join()
-	thread_pool = None
 
 
 # Based largely on code from https://hackernoon.com/prime-numbers-using-python-824ff4b3ea19
@@ -100,12 +101,13 @@ def _generate_primes_between_sync(start, end, redis_client, key_to_store_results
 	redis_client.set(key_to_store_results_under, primes_as_json)
 	return primes
 
+
 def _generate_primes_between_sync_shim(*args, **kwargs):
 	_generate_primes_between_sync(args[0]['start'], args[0]['end'], args[0]['redis_client'], args[0]['key_to_store_results_under'])
 
 
 def generate_primes_between_async(start, end, redis_client, key_to_store_results_under):
+	# This is here just in case it helps to change things to be synchronous for debugging purposes
 #	_generate_primes_between_sync(start, end, redis_client, key_to_store_results_under)
 	global thread_pool
-	thread_pool.map(_generate_primes_between_sync_shim, [{'start': start, 'end': end, 'redis_client': None,
-	                                                     'key_to_store_results_under': key_to_store_results_under}])
+	thread_pool.append_to_work_queue(start, end, None, key_to_store_results_under)

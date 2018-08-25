@@ -45,7 +45,7 @@ class PrimeChallengeServerTestCase(unittest.TestCase):
 
 	def test_startJobImpl_big_prime(self):
 		with PrimeGenerator.start_thread_pool() as tp:
-			jobId1 = PrimeChallengeServer.startJobImpl('1', '1234567')
+			jobId1 = PrimeChallengeServer.startJobImpl('1', '1234566')
 			jobId2 = PrimeChallengeServer.startJobImpl('12', '17')
 			jobId3 = PrimeChallengeServer.startJobImpl('18', '24')
 		result2 = self.queryJobImplSync(jobId2)
@@ -61,18 +61,18 @@ class PrimeChallengeServerTestCase(unittest.TestCase):
 		# we really are operating asynchronously.
 		# So watch Task Manager as this is running and make sure that >1 CPU is busy while this runs.
 		with PrimeGenerator.start_thread_pool() as tp:
-			jobId1 = PrimeChallengeServer.startJobImpl('1', '1234567')
-			jobId2 = PrimeChallengeServer.startJobImpl('2', '1234567')
-			jobId3 = PrimeChallengeServer.startJobImpl('3', '1234567')
-		result1 = self.queryJobImplSync(jobId1)
-		arr = json.loads(result1)
-		self.assertEqual(len(arr), 95361)
-		result2 = self.queryJobImplSync(jobId2)
-		arr = json.loads(result2)
-		self.assertEqual(len(arr), 95361)
-		result3 = self.queryJobImplSync(jobId3)
-		arr = json.loads(result3)
-		self.assertEqual(len(arr), 95361)
+			jobId1 = PrimeChallengeServer.startJobImpl('1', '123456')
+			jobId2 = PrimeChallengeServer.startJobImpl('2', '123456')
+			jobId3 = PrimeChallengeServer.startJobImpl('3', '123456')
+			result1 = self.queryJobImplSync(jobId1)
+			arr = json.loads(result1)
+			self.assertEqual(len(arr), 11602)
+			result2 = self.queryJobImplSync(jobId2)
+			arr = json.loads(result2)
+			self.assertEqual(len(arr), 11601)
+			result3 = self.queryJobImplSync(jobId3)
+			arr = json.loads(result3)
+			self.assertEqual(len(arr), 11600)
 
 	def test_startJobImpl_exceptions(self):
 		with PrimeGenerator.start_thread_pool() as tp:
