@@ -4,6 +4,7 @@ import RedisClientFactory
 
 class PrimeGeneratorTestCase(unittest.TestCase):
 	def test__generate_primes_between(self):
+		# we can use a dummy non-thread safe redis client in these tests
 		test_redis_client = RedisClientFactory.get_dummy_redis_client();
 
 		# start and end are the same

@@ -7,7 +7,7 @@ class RealRedisClient():
 	The implementation that uses and actual redis server.
 	"""
 	def __init__(self):
-		self.redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+		self.redis_conn = redis.StrictRedis(host='192.168.1.119', port=6379, db=0)
 
 	def get(self, key):
 		return self.redis_conn.get(key)
@@ -39,7 +39,7 @@ def get_redis_client():
 	Returns a class that support redis-like 'get' and 'set' operations
 	:return:
 	"""
-	return FakeRedisClient()
+	return RealRedisClient()
 
 
 def get_dummy_redis_client():

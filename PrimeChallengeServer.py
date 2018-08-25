@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 import random
 from flask import Flask
@@ -83,7 +84,12 @@ def queryJobImpl(jobId):
 		if primes_as_json is None:
 			raise HTTPStatusException.HTTPStatusException('The prime numbers for {0} are still being calculated'
 			                                              .format(job_args_key), HTTPStatus.NO_CONTENT)
-	return primes_as_json
+	# This silly little dance is because the redis client returns b'some string' when everything else
+	# expects 'some string'. Since assertEqual(b'some string', 'some string') fails it was easiest to fix this here.
+	# Besides, this could potentially cause other issues to real clients.
+	obj1 = json.loads(primes_as_json)
+	canonical_json = json.dumps(obj1)
+	return canonical_json
 
 
 @app.route('/Start/<start>,<end>', methods=['POST'])
@@ -119,10 +125,9 @@ def QueryJob(jobId):
 
 
 if __name__ == '__main__':
-	thread_pool = PrimeGenerator.start_thread_pool()
 	# Start the thread pool that will handle the async prime number generation
-	prime_generator_thread_pool = ThreadPool(2)
-	# Start the flask web server
-	app.run(host='0.0.0.0', port=8080)
-	# Now shut down the thread pool nicely
-	PrimeGenerator.stop_thread_pool(thread_pool)
+	with PrimeGenerator.start_thread_pool() as tp:
+		thread_pool = PrimeGenerator.start_thread_pool()
+		# Start the flask web server
+		app.run(host='0.0.0.0', port=8080)
+	# The thread pool has shut down nicely already via the 'with'/__exit__() protocol

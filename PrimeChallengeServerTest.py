@@ -1,4 +1,5 @@
 import unittest
+import json
 from http import HTTPStatus
 
 import PrimeChallengeServer
@@ -14,17 +15,64 @@ class PrimeChallengeServerTestCase(unittest.TestCase):
 		with PrimeGenerator.start_thread_pool() as tp:
 			self.assertTrue(type(str), type(PrimeChallengeServer.startJobImpl('1', '11')))
 
+	def assertEqualJson(self, json1, json2):
+		obj1 = json.loads(json1)
+		obj2 = json.loads(json2)
+		self.assertEqual(obj1, obj2)
+
+	def queryJobImplSync(self, jobId):
+		while True:
+			try:
+				result = PrimeChallengeServer.queryJobImpl(jobId)
+				break
+			except HTTPStatusException.HTTPStatusException as ex:
+				if ex.http_status == HTTPStatus.NO_CONTENT:
+					continue
+				raise
+		return result
+
 	def test_startJobImpl_multicallers(self):
 		with PrimeGenerator.start_thread_pool() as tp:
 			jobId1 = PrimeChallengeServer.startJobImpl('1', '11')
 			jobId2 = PrimeChallengeServer.startJobImpl('12', '17')
 			jobId3 = PrimeChallengeServer.startJobImpl('18', '24')
-		result1 = PrimeChallengeServer.queryJobImpl(jobId1)
-		result2 = PrimeChallengeServer.queryJobImpl(jobId2)
-		result3 = PrimeChallengeServer.queryJobImpl(jobId3)
+		result1 = self.queryJobImplSync(jobId1)
+		result2 = self.queryJobImplSync(jobId2)
+		result3 = self.queryJobImplSync(jobId3)
 		self.assertEqual('[1, 2, 3, 5, 7, 11]', result1)
 		self.assertEqual('[13, 17]', result2)
 		self.assertEqual('[19, 23]', result3)
+
+	def test_startJobImpl_big_prime(self):
+		with PrimeGenerator.start_thread_pool() as tp:
+			jobId1 = PrimeChallengeServer.startJobImpl('1', '1234567')
+			jobId2 = PrimeChallengeServer.startJobImpl('12', '17')
+			jobId3 = PrimeChallengeServer.startJobImpl('18', '24')
+		result2 = self.queryJobImplSync(jobId2)
+		result3 = self.queryJobImplSync(jobId3)
+		self.assertEqual('[13, 17]', result2)
+		self.assertEqual('[19, 23]', result3)
+		result1 = self.queryJobImplSync(jobId1)
+		arr = json.loads(result1)
+		self.assertEqual(len(arr), 95361)
+
+	def test_startJobImpl_big_prime(self):
+		# The purpose of this test is just to cause multiple CPUs to stay busy long enough to feel comfortable that
+		# we really are operating asynchronously.
+		# So watch Task Manager as this is running and make sure that >1 CPU is busy while this runs.
+		with PrimeGenerator.start_thread_pool() as tp:
+			jobId1 = PrimeChallengeServer.startJobImpl('1', '1234567')
+			jobId2 = PrimeChallengeServer.startJobImpl('2', '1234567')
+			jobId3 = PrimeChallengeServer.startJobImpl('3', '1234567')
+		result1 = self.queryJobImplSync(jobId1)
+		arr = json.loads(result1)
+		self.assertEqual(len(arr), 95361)
+		result2 = self.queryJobImplSync(jobId2)
+		arr = json.loads(result2)
+		self.assertEqual(len(arr), 95361)
+		result3 = self.queryJobImplSync(jobId3)
+		arr = json.loads(result3)
+		self.assertEqual(len(arr), 95361)
 
 	def test_startJobImpl_exceptions(self):
 		with PrimeGenerator.start_thread_pool() as tp:
