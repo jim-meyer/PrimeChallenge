@@ -1,3 +1,4 @@
+import argparse
 import json
 from http import HTTPStatus
 import random
@@ -11,7 +12,7 @@ import HTTPStatusException
 random.seed()
 
 app = Flask(__name__)
-redis_client = RedisClientFactory.get_redis_client()
+redis_client = None
 
 
 def safe_int_cast(str):
@@ -34,6 +35,17 @@ def get_key(start, end):
 	:return: string:
 	"""
 	return '{0},{1}'.format(start, end)
+
+
+# Two functions that made unit tests easier and cleaner to write
+def set_redis_client(new_redis_client):
+	global redis_client
+	redis_client = new_redis_client
+
+
+def get_redis_client():
+	global redis_client
+	return redis_client
 
 
 def startJobImpl(start, end):
@@ -64,18 +76,19 @@ def startJobImpl(start, end):
 	job_id_str = '{:02x}'.format(job_id)
 	key = get_key(start, end)
 	# First we store the job ID along with the request's parameters
-	redis_client.set(job_id_str, key)
+	client = get_redis_client()
+	client.set(job_id_str, key)
 
 	# Do a "quick" check to see if we've already cached the primes in redis. If we have then there is no sense
 	# calculating them again. "Quick" is in quotes since there may very well be some cases where it's faster to
 	# simply generate the primes rather than hit the network and redis and back. But until more analysis is done
 	# this seems reasonable.
-	primes_as_json = redis_client.get(key)
+	primes_as_json = client.get(key)
 	if primes_as_json is None:
 		# Now we generate the prime numbers asynchronously. The asyn processing will update redis by storing the
 		# prime numbers associated with the start/end parameters. That way a '/Query' can look up the parameters
 		# by job ID, then look up the prime numbers based on those parameters.
-		PrimeGenerator.generate_primes_between_async(startInt, endInt, redis_client, key)
+		PrimeGenerator.generate_primes_between_async(startInt, endInt, client, key)
 	else:
 		pass
 
@@ -84,11 +97,12 @@ def startJobImpl(start, end):
 
 def queryJobImpl(jobId):
 	primes_as_json = ''
-	job_args_key = redis_client.get(jobId)
+	client = get_redis_client()
+	job_args_key = client.get(jobId)
 	if job_args_key is None:
 		raise HTTPStatusException.HTTPStatusException('Job {0} could not be found'.format(jobId), HTTPStatus.NOT_FOUND)
 	else:
-		primes_as_json = redis_client.get(job_args_key)
+		primes_as_json = client.get(job_args_key)
 		if primes_as_json is None:
 			raise HTTPStatusException.HTTPStatusException('The prime numbers for {0} are still being calculated'
 			                                              .format(job_args_key), HTTPStatus.NO_CONTENT)
@@ -133,9 +147,23 @@ def QueryJob(jobId):
 
 
 if __name__ == '__main__':
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-r', '--redisServerIP', default='127.0.0.1',
+	                    help='The IP Address of the redis server that will store the cached results of requests')
+	parser.add_argument('-l', '--listenerAddress', default='127.0.0.1',
+	                    help='The IP address of that this server will listen on. If you need this server to be ' \
+	                    'reachable from another host use 0.0.0.0 but understand the security implications first.')
+	args = parser.parse_args()
+
+	print('Listening on {0}'.format(args.listenerAddress))
+	print('Using redis server at {0}'.format(args.redisServerIP))
+
+	# Set up our access to the redis server
+	RedisClientFactory.register_redis_server(args.redisServerIP)
+	set_redis_client(RedisClientFactory.get_redis_client())
+
 	# Start the thread pool that will handle the async prime number generation
 	with PrimeGenerator.start_thread_pool() as tp:
-		thread_pool = PrimeGenerator.start_thread_pool()
 		# Start the flask web server
-		app.run(host='0.0.0.0', port=8080)
+		app.run(host=args.listenerAddress, port=8080)
 	# The thread pool has shut down nicely already via the 'with'/__exit__() protocol

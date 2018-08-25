@@ -4,8 +4,9 @@ import RedisClientFactory
 
 class PrimeGeneratorTestCase(unittest.TestCase):
 	def test__generate_primes_between(self):
-		# we can use a dummy non-thread safe redis client in these tests
-		test_redis_client = RedisClientFactory.get_dummy_redis_client();
+		# we can use a fake non-thread safe redis client in these tests
+		RedisClientFactory.use_fake_redis_client()
+		test_redis_client = RedisClientFactory.get_redis_client();
 
 		# start and end are the same
 		self.assertEqual(list([1]), PrimeGenerator._generate_primes_between_sync(1, 1, test_redis_client, 'Test1'))
@@ -27,7 +28,8 @@ class PrimeGeneratorTestCase(unittest.TestCase):
 
 
 	def test__generate_primes_between_negative(self):
-		test_redis_client = RedisClientFactory.get_dummy_redis_client();
+		RedisClientFactory.use_fake_redis_client()
+		test_redis_client = RedisClientFactory.get_redis_client();
 
 		self.assertEqual([], PrimeGenerator._generate_primes_between_sync(13, 1, test_redis_client, 'Test1'))
 		self.assertEqual(test_redis_client.get('Test1'), '[]')

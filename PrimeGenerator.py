@@ -108,6 +108,6 @@ def _generate_primes_between_sync_shim(*args, **kwargs):
 
 def generate_primes_between_async(start, end, redis_client, key_to_store_results_under):
 	# This is here just in case it helps to change things to be synchronous for debugging purposes
-#	_generate_primes_between_sync(start, end, redis_client, key_to_store_results_under)
-	global thread_pool
-	thread_pool.append_to_work_queue(start, end, None, key_to_store_results_under)
+	_generate_primes_between_sync(start, end, redis_client, key_to_store_results_under)
+#	global thread_pool
+#	thread_pool.append_to_work_queue(start, end, None, key_to_store_results_under)
